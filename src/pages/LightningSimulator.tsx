@@ -1,252 +1,217 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useLang } from "../i18n/LanguageContext";
 import { LIGHTNING_ANNUAL_P } from "../data/scenarios";
-import {
-  cumulativeProbability,
-  expectedCount,
-  simulate,
-  formatProbability,
-  formatPercent,
-  formatNumber,
-} from "../utils/probability";
-import ShareCard from "../components/ShareCard";
-
-const POPULATION_STEPS = [
-  1_000, 5_000, 10_000, 50_000, 100_000, 500_000, 1_000_000, 5_000_000,
-  10_000_000, 50_000_000, 100_000_000, 330_000_000,
-];
-
-const ANIM_DURATION = 1800;
-const ANIM_TICK = 60;
+import { formatNumber, formatProbability } from "../utils/probability";
+import GachaShareCard from "../components/GachaShareCard";
 
 export default function LightningSimulator() {
-  const { t, lang } = useLang();
+  const { t } = useLang();
 
-  const [populationIndex, setPopulationIndex] = useState(7);
-  const [years, setYears] = useState(80);
-  const [simResult, setSimResult] = useState<number | null>(null);
-  const [hasRun, setHasRun] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
-  const [displayNumber, setDisplayNumber] = useState<number | null>(null);
+  const [years, setYears] = useState(0);
+  const [strikes, setStrikes] = useState(0);
+  const [isStruck, setIsStruck] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
+  const [isAutoRunning, setIsAutoRunning] = useState(false);
+  const [safePulse, setSafePulse] = useState(false);
+  const autoRunRef = useRef(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
-  const population = POPULATION_STEPS[populationIndex];
-  const cumProb = useMemo(
-    () => cumulativeProbability(LIGHTNING_ANNUAL_P, years),
-    [years]
-  );
-  const expected = useMemo(
-    () => expectedCount(cumProb, population),
-    [cumProb, population]
-  );
+  const pullYears = useCallback((count: number) => {
+    let added = 0;
+    let struck = false;
 
-  const runSim = useCallback(() => {
-    const result = simulate(cumProb, population);
-    setIsRunning(true);
-    setHasRun(true);
-    setSimResult(result);
-    setDisplayNumber(null);
-    setShowFlash(false);
-  }, [cumProb, population]);
+    for (let i = 0; i < count; i++) {
+      added++;
+      if (Math.random() < LIGHTNING_ANNUAL_P) {
+        struck = true;
+        break;
+      }
+    }
 
-  useEffect(() => {
-    if (!isRunning || simResult === null) return;
+    setYears((prev) => prev + added);
 
-    const maxRand = Math.max(Math.round(expected * 2), 10);
-    let elapsed = 0;
+    if (struck) {
+      setStrikes((prev) => prev + 1);
+      setIsStruck(true);
+      setShowFlash(true);
+      setTimeout(() => setShowFlash(false), 600);
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 200);
+    } else {
+      setSafePulse(true);
+      setTimeout(() => setSafePulse(false), 250);
+    }
+  }, []);
 
-    const interval = setInterval(() => {
-      elapsed += ANIM_TICK;
+  const runUntilStruck = useCallback(() => {
+    if (isAutoRunning) {
+      autoRunRef.current = false;
+      setIsAutoRunning(false);
+      return;
+    }
 
-      if (elapsed >= ANIM_DURATION) {
-        clearInterval(interval);
+    autoRunRef.current = true;
+    setIsAutoRunning(true);
+
+    const runBatch = () => {
+      if (!autoRunRef.current) return;
+
+      const BATCH = 10_000;
+      let struck = false;
+      let added = 0;
+
+      for (let i = 0; i < BATCH; i++) {
+        added++;
+        if (Math.random() < LIGHTNING_ANNUAL_P) {
+          struck = true;
+          break;
+        }
+      }
+
+      setYears((prev) => prev + added);
+
+      if (struck) {
+        autoRunRef.current = false;
+        setIsAutoRunning(false);
+        setStrikes((prev) => prev + 1);
+        setIsStruck(true);
         setShowFlash(true);
-        setDisplayNumber(simResult);
-        setIsRunning(false);
-        setTimeout(() => setShowFlash(false), 400);
+        setTimeout(() => setShowFlash(false), 600);
         setTimeout(() => {
-          resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 100);
-        return;
-      }
-
-      const progress = elapsed / ANIM_DURATION;
-      if (progress > 0.85) {
-        const near = simResult + Math.round((Math.random() - 0.5) * Math.max(simResult * 0.1, 3));
-        setDisplayNumber(Math.max(0, near));
+          resultRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 200);
       } else {
-        setDisplayNumber(Math.floor(Math.random() * maxRand));
+        requestAnimationFrame(runBatch);
       }
-    }, ANIM_TICK);
+    };
 
-    return () => clearInterval(interval);
-  }, [isRunning, simResult, expected]);
+    requestAnimationFrame(runBatch);
+  }, [isAutoRunning]);
 
-  const annualProbStr = formatProbability(LIGHTNING_ANNUAL_P);
-  const cumProbStr = formatProbability(cumProb);
+  const reset = useCallback(() => {
+    autoRunRef.current = false;
+    setIsAutoRunning(false);
+    setYears(0);
+    setStrikes(0);
+    setIsStruck(false);
+    setShowFlash(false);
+  }, []);
 
-  const barMax = Math.max(expected, simResult ?? 0, 1);
+  const disabled = isAutoRunning || isStruck;
 
   return (
     <main className="simulator">
       <section className="sim-hero">
         <span className="sim-icon">⚡</span>
         <h1 className="sim-title">{t("lightning.title")}</h1>
-        <p className="sim-subtitle">{t("lightning.subtitle")}</p>
+        <p className="gacha-question">{t("lightning.gachaQuestion")}</p>
       </section>
 
       <section className="sim-section">
-        <p className="sim-intro">{t("lightning.intro")}</p>
+        <div className="gacha-odds">
+          <span className="gacha-odds-label">{t("lightning.annualProb")}</span>
+          <span className="gacha-odds-value">
+            {formatProbability(LIGHTNING_ANNUAL_P)}
+          </span>
+        </div>
       </section>
 
       <section className="sim-section">
-        <div className="prob-display">
-          <div className="prob-card">
-            <span className="prob-label">{t("lightning.annualProb")}</span>
-            <span className="prob-value big">{annualProbStr}</span>
-            <span className="prob-percent">{formatPercent(LIGHTNING_ANNUAL_P)}</span>
+        <div
+          className={`gacha-counter${isAutoRunning ? " gacha-counter--running" : ""}${isStruck ? " gacha-counter--struck" : ""}${safePulse ? " gacha-counter--safe" : ""}`}
+        >
+          <div className="gacha-years">
+            <span className="gacha-years-number">{formatNumber(years)}</span>
+            <span className="gacha-years-label">{t("lightning.yearsLabel")}</span>
           </div>
-          <div className="prob-card">
-            <span className="prob-label">
-              {t("lightning.cumulativeProb").replace("{years}", String(years))}
-            </span>
-            <span className="prob-value">{cumProbStr}</span>
-            <span className="prob-percent">{formatPercent(cumProb, 4)}</span>
+          <div className="gacha-stats">
+            <div className="gacha-stat">
+              <span className="gacha-stat-value">{strikes}</span>
+              <span className="gacha-stat-label">{t("lightning.timesStruck")}</span>
+            </div>
           </div>
         </div>
-        <p className="prob-note">{t("lightning.cumulativeExplain")}</p>
       </section>
 
-      <section className="sim-section controls">
-        <div className="control-group">
-          <label className="control-label">
-            {t("lightning.sliderPopulation")}:{" "}
-            <strong>{formatNumber(population)}</strong>
-            {lang === "ja" ? " 人" : ""}
-          </label>
-          <input
-            type="range"
-            className="slider"
-            min={0}
-            max={POPULATION_STEPS.length - 1}
-            value={populationIndex}
-            onChange={(e) => {
-              setPopulationIndex(Number(e.target.value));
-              setHasRun(false);
-              setSimResult(null);
-            }}
-          />
-          <div className="slider-labels">
-            <span>{formatNumber(POPULATION_STEPS[0])}</span>
-            <span>{formatNumber(POPULATION_STEPS[POPULATION_STEPS.length - 1])}</span>
-          </div>
-        </div>
+      <section className="sim-section gacha-buttons">
+        <button
+          className="btn btn-primary btn-large gacha-btn-main"
+          onClick={() => pullYears(1)}
+          disabled={disabled}
+        >
+          {t("lightning.pull1")}
+        </button>
 
-        <div className="control-group">
-          <label className="control-label">
-            {t("lightning.sliderYears")}:{" "}
-            <strong>{years}</strong>
-          </label>
-          <input
-            type="range"
-            className="slider"
-            min={1}
-            max={100}
-            value={years}
-            onChange={(e) => {
-              setYears(Number(e.target.value));
-              setHasRun(false);
-              setSimResult(null);
-            }}
-          />
-          <div className="slider-labels">
-            <span>1</span>
-            <span>100</span>
-          </div>
-        </div>
-
-        <div className="expected-display">
-          <span className="expected-label">{t("lightning.expectedCount")}</span>
-          <span className="expected-value">{expected.toFixed(2)}</span>
-          <span className="expected-note">{t("lightning.expectedExplain")}</span>
+        <div className="gacha-speed-row">
+          <button
+            className="btn btn-secondary gacha-btn-speed"
+            onClick={() => pullYears(10)}
+            disabled={disabled}
+          >
+            +10{t("lightning.yearsShort")}
+          </button>
+          <button
+            className="btn btn-secondary gacha-btn-speed"
+            onClick={() => pullYears(100)}
+            disabled={disabled}
+          >
+            +100{t("lightning.yearsShort")}
+          </button>
+          <button
+            className="btn btn-secondary gacha-btn-speed"
+            onClick={() => pullYears(1000)}
+            disabled={disabled}
+          >
+            +1,000{t("lightning.yearsShort")}
+          </button>
         </div>
 
         <button
-          className="btn btn-primary btn-large"
-          onClick={runSim}
-          disabled={isRunning}
+          className={`btn gacha-btn-auto ${isAutoRunning ? "btn-danger" : "btn-accent"}`}
+          onClick={runUntilStruck}
+          disabled={isStruck}
         >
-          {isRunning
-            ? "⚡ ..."
-            : hasRun
-              ? t("lightning.rerun")
-              : t("lightning.runSimulation")}
+          {isAutoRunning ? t("lightning.stop") : t("lightning.untilStruck")}
         </button>
       </section>
 
-      {showFlash && <div className="lightning-flash" />}
+      {showFlash && <div className="lightning-flash gacha-flash" />}
 
-      {hasRun && (
-        <section className="sim-section results" ref={resultRef}>
-          <h2 className="section-title">{t("lightning.simResult")}</h2>
-
-          <div className={`result-big ${isRunning ? "result-rolling" : "result-landed"}`}>
-            <span className={`result-number ${!isRunning && displayNumber !== null ? "result-reveal" : ""}`}>
-              {displayNumber !== null ? formatNumber(displayNumber) : "—"}
-            </span>
-            <span className="result-unit">{t("lightning.personsHit")}</span>
+      {isStruck && (
+        <section className="sim-section gacha-result" ref={resultRef}>
+          <div className="gacha-struck-reveal">
+            <span className="gacha-struck-icon">⚡</span>
+            <h2 className="gacha-struck-title">{t("lightning.struckTitle")}</h2>
+            <p className="gacha-struck-subtitle">
+              {t("lightning.struckMessage").replace(
+                "{years}",
+                formatNumber(years)
+              )}
+            </p>
           </div>
 
-          {!isRunning && displayNumber !== null && (
-            <>
-          <p className="result-explain">{t("lightning.simResultExplain")}</p>
+          <GachaShareCard years={years} strikes={strikes} />
 
-          <div className="result-comparison">
-            <div className="bar-chart">
-              <div className="bar-row">
-                <span className="bar-label">{t("lightning.expectedCount")}</span>
-                <div className="bar-track">
-                  <div
-                    className="bar-fill bar-expected"
-                    style={{ width: `${Math.max((expected / barMax) * 100, 2)}%` }}
-                  >
-                    <span className="bar-value">{expected.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="bar-row">
-                <span className="bar-label">{t("lightning.simResult")}</span>
-                <div className="bar-track">
-                  <div
-                    className="bar-fill bar-simulated"
-                    style={{
-                      width: `${(simResult ?? 0) > 0 ? Math.max(((simResult ?? 0) / barMax) * 100, 2) : 0}%`,
-                    }}
-                  >
-                    <span className="bar-value">{formatNumber(simResult ?? 0)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <ShareCard
-            annualProbStr={annualProbStr}
-            years={years}
-            population={population}
-            expectedStr={expected.toFixed(2)}
-            simulatedCount={simResult ?? 0}
-          />
-            </>
-          )}
+          <button
+            className="btn btn-primary btn-large gacha-btn-retry"
+            onClick={reset}
+          >
+            {t("lightning.tryAgain")}
+          </button>
         </section>
       )}
 
       <section className="sim-section methodology">
         <details>
           <summary>{t("lightning.methodology")}</summary>
-          <p>{t("lightning.methodologyText")}</p>
+          <p>{t("lightning.gachaMethodology")}</p>
         </details>
       </section>
 
@@ -257,7 +222,6 @@ export default function LightningSimulator() {
       <section className="sim-section source">
         <h3 className="section-title">{t("lightning.source")}</h3>
         <p>{t("lightning.sourceText")}</p>
-        <p className="source-note">{t("lightning.sourceNote")}</p>
         <a
           href={t("lightning.sourceUrl")}
           target="_blank"

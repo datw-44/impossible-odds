@@ -781,3 +781,289 @@ a:hover {
     padding: 14px 24px;
   }
 }
+
+/* === GACHA EXPERIENCE === */
+.gacha-question {
+  font-size: clamp(18px, 4vw, 28px);
+  color: var(--text-secondary);
+  margin: 8px 0 0;
+  font-weight: 600;
+}
+
+.gacha-odds {
+  text-align: center;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+}
+.gacha-odds-label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.gacha-odds-value {
+  font-family: var(--mono);
+  font-size: 24px;
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.gacha-counter {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 20px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.gacha-counter--running {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 30px var(--glow-blue);
+  animation: counterPulse 0.5s ease-in-out infinite;
+}
+.gacha-counter--struck {
+  border-color: var(--accent-lightning) !important;
+  box-shadow: 0 0 40px var(--glow-lightning) !important;
+  animation: struckShake 0.4s ease-out;
+}
+.gacha-counter--safe {
+  border-color: var(--success);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+}
+@keyframes counterPulse {
+  0%, 100% { box-shadow: 0 0 20px var(--glow-blue); }
+  50% { box-shadow: 0 0 50px rgba(77, 166, 255, 0.3); }
+}
+@keyframes struckShake {
+  0%, 100% { transform: translateX(0); }
+  15%, 55% { transform: translateX(-6px); }
+  35%, 75% { transform: translateX(6px); }
+}
+
+.gacha-years-number {
+  display: block;
+  font-family: var(--mono);
+  font-size: clamp(48px, 12vw, 80px);
+  font-weight: 700;
+  color: var(--accent-cyan);
+  line-height: 1;
+  letter-spacing: -2px;
+}
+.gacha-counter--struck .gacha-years-number {
+  color: var(--accent-lightning);
+  text-shadow: 0 0 30px var(--glow-lightning);
+}
+.gacha-years-label {
+  display: block;
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.gacha-stats {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+}
+.gacha-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.gacha-stat-value {
+  font-family: var(--mono);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.gacha-stat-label {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.gacha-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gacha-btn-main {
+  width: 100%;
+  font-size: 20px !important;
+  padding: 20px !important;
+  letter-spacing: 1px;
+}
+.gacha-speed-row {
+  display: flex;
+  gap: 8px;
+}
+.gacha-btn-speed {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 10px 8px;
+}
+.gacha-btn-auto {
+  width: 100%;
+  padding: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent-gold), #f59e0b);
+  color: var(--navy-900);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.btn-accent:hover {
+  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.4);
+}
+.btn-accent:active {
+  transform: scale(0.97);
+}
+.btn-danger {
+  background: linear-gradient(135deg, var(--danger), #dc2626);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.btn-danger:hover {
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+}
+
+.gacha-btn-retry {
+  width: 100%;
+  margin-top: 20px;
+}
+
+/* Struck reveal */
+.gacha-result {
+  animation: fadeIn 0.5s ease-out;
+}
+.gacha-struck-reveal {
+  text-align: center;
+  padding: 48px 20px;
+  background: rgba(240, 224, 64, 0.04);
+  border: 2px solid rgba(240, 224, 64, 0.25);
+  border-radius: 20px;
+  margin-bottom: 24px;
+  animation: struckReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes struckReveal {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.gacha-struck-icon {
+  font-size: 80px;
+  display: block;
+  margin-bottom: 8px;
+  animation: struckBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes struckBounce {
+  0% { transform: translateY(-30px) scale(0.3); opacity: 0; }
+  50% { transform: translateY(8px) scale(1.15); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.gacha-struck-title {
+  font-size: clamp(32px, 8vw, 56px);
+  font-weight: 800;
+  color: var(--accent-lightning);
+  margin: 0 0 12px;
+  text-shadow: 0 0 40px var(--glow-lightning);
+  letter-spacing: 4px;
+}
+.gacha-struck-subtitle {
+  font-size: 17px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Gacha flash — more dramatic */
+.gacha-flash {
+  animation: gachaFlash 0.6s ease-out forwards !important;
+}
+@keyframes gachaFlash {
+  0% { background: rgba(255, 255, 255, 0.6); }
+  8% { background: rgba(240, 224, 64, 0.5); }
+  25% { background: rgba(255, 255, 255, 0.2); }
+  50% { background: rgba(240, 224, 64, 0.08); }
+  100% { background: transparent; }
+}
+
+/* Gacha share card */
+.gacha-share-card {
+  text-align: center;
+}
+.gacha-share-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+.gacha-share-big {
+  padding: 24px 0;
+}
+.gacha-share-number {
+  display: block;
+  font-family: var(--mono);
+  font-size: clamp(40px, 10vw, 56px);
+  font-weight: 700;
+  color: var(--accent-lightning);
+  line-height: 1;
+  text-shadow: 0 0 20px var(--glow-lightning);
+}
+.gacha-share-unit {
+  display: block;
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+.gacha-share-detail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 12px 16px;
+  background: var(--navy-700);
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .gacha-counter {
+    padding: 28px 16px;
+  }
+  .gacha-years-number {
+    font-size: clamp(40px, 10vw, 64px);
+  }
+  .gacha-btn-main {
+    font-size: 18px !important;
+    padding: 16px !important;
+  }
+  .gacha-btn-speed {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+  .gacha-struck-icon {
+    font-size: 56px;
+  }
+  .gacha-share-detail {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+}
