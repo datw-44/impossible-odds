@@ -221,10 +221,10 @@ export default function LightningSimulator() {
                   <div
                     className="bar-fill bar-simulated"
                     style={{
-                      width: `${simResult > 0 ? Math.max((simResult / barMax) * 100, 2) : 0}%`,
+                      width: `${(simResult ?? 0) > 0 ? Math.max(((simResult ?? 0) / barMax) * 100, 2) : 0}%`,
                     }}
                   >
-                    <span className="bar-value">{formatNumber(simResult)}</span>
+                    <span className="bar-value">{formatNumber(simResult ?? 0)}</span>
                   </div>
                 </div>
               </div>
